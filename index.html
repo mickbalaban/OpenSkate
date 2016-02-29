@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html manifest="skate.manifest">
+<head>
+<meta name="viewport" content="width=device-width,maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/paper.js/0.9.25/paper-full.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js"></script>
+<link rel="stylesheet" href="style.css"/>
+
+<script type="text/javascript">
+
+var connected = false
+  , skate_ip = '192.168.4.1:81'
+  , connection = new ReconnectingWebSocket('ws://'+skate_ip+'/', null, {debug: true, reconnectInterval: 3000})
+  , page = 0
+  , speed = 1;
+
+connection.onopen = function () {
+  connected = true;
+  helpPage();
+};
+
+connection.onerror = function (error) {
+	console.log('WebSocket Error ', error);
+  connected = false;
+};
+
+connection.onmessage = function (e) {
+  // todo, battery status and stuff...
+  console.log('Server: ', e.data);
+};
+
+var send = _.throttle(function(s) {
+  //document.getElementById('out').innerHTML = s;
+
+  if (connected) {
+    try {
+      connection.send(s);
+    } catch (e) {
+      console.info(e);
+    }
+  }
+}, 100);
+
+var onAccel = function(e) {
+
+  var acc = e.accelerationIncludingGravity;
+  var am = 341;
+
+  var a = acc.y;
+  if (acc.y>9) a = 9;
+  if (acc.y<0) a = 0;
+
+  if (speed == 1)
+    am = 341;
+  else if (speed == 2)
+    am = 682;
+  else if (speed == 3)
+    am = 1023;
+
+  var ac = Math.round((am / 9) * a);
+
+  speedBar.size.width = (w/1023) * ac;
+  speedBar.bounds.x = 0;
+
+  //document.getElementById('h').innerHTML = (w/1023);
+
+  paper.view.draw();
+
+  send(ac);
+}
+
+
+if (window.DeviceMotionEvent) {
+  window.addEventListener('devicemotion', onAccel, false);
+} else {
+  console.info("accelerometer not supported");
+}
+
+function connectPage() {
+  bgrd.position.x = 0;
+  bg.visible = false;
+  paper.view.draw();
+}
+
+function helpPage() {
+  bgrd.position.x = 185;
+  bg.visible = false;
+  paper.view.draw();
+  page = 1;
+  setTimeout(ridePage, 1000);
+}
+
+function ridePage() {
+  bgrd.position.x = -315;
+  bg.visible = true;
+  speedBar.visible = true;
+  paper.view.draw();
+  page = 2;
+
+}
+
+function showSpeedButtons() {
+  window.speedBar = new Shape.Rectangle([0,0], [0,180]);
+}
+
+function setSpeed(s) {
+  speed = s;
+  bg.strokeColor = 'black';
+  bg.fillColor = 'white';
+
+  b1.fillColor = 'black';
+
+  if (s > 1)
+    b2.fillColor = 'black';
+
+  if (s == 3)
+    b3.fillColor = 'black';
+
+  paper.view.draw();
+}
+
+</script>
+<script type="text/paperscript" canvas="myCanvas">
+
+window.w = this.view.size.width;
+window.h = this.view.size.height;
+
+window.bgrd = null;
+
+window.b1 = new Path.Circle({
+    center: [w/6 * 2, h - 40],
+    radius: 10
+});
+
+window.b2 = new Path.Circle({
+    center: [w/6 * 3, h - 40],
+    radius: 10
+});
+
+window.b3 = new Path.Circle({
+    center: [w/6 * 4, h - 40],
+    radius: 10
+});
+
+window.bg = new Group([b1, b2, b3]);
+
+bg.visible = false;
+
+b1.onMouseUp = function(e) {
+  setSpeed(1);
+}
+
+b2.onMouseUp = function(e) {
+  setSpeed(2);
+}
+
+b3.onMouseUp = function(e) {
+  setSpeed(3);
+}
+
+setSpeed(1);
+
+window.speedBar = new Shape.Rectangle([0,0], [0,180]);
+speedBar.fillColor = '#dbdbdb';
+speedBar.visible = false;
+
+project.importSVG("graphics.svg", function(g) {
+  window.bgrd = g;
+
+  if (connected && page == 0)
+    helpPage();
+
+});
+
+
+
+
+</script>
+
+</head>
+<body>
+<h1 id="h" style="position:absolute"></h1>
+	<canvas id="myCanvas" resize></canvas>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+CACHE MANIFEST
+# Cache manifest version 0.0.9
+http://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.js
+http://cdnjs.cloudflare.com/ajax/libs/paper.js/0.9.25/paper-full.js
+http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js
+http://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js
+/graphics.svg
+/style.css
+
+NETWORK:
+# All URLs that start with the following lines
+# are whitelisted.
+
+CACHE:
+# Additional items to cache.
+
+#FALLBACK:
